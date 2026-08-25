@@ -1,0 +1,41 @@
+name: Sync ClawHub upstream
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-clawhub-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out mirror
+        uses: actions/checkout@v7.0.1
+
+      - name: Synchronize latest ClawHub package
+        run: python3 scripts/sync_upstream.py
+
+      - name: Commit and push changes
+        shell: bash
+        run: |
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "ClawHub upstream is already current." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          version="$(python3 -c 'import json; print(json.load(open(".clawhub/upstream.json"))["version"])')"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit -m "chore(sync): update ClawHub upstream to ${version}"
+          git push
+          echo "Updated mirror to ClawHub version ${version}." >> "$GITHUB_STEP_SUMMARY"
