@@ -1,6 +1,6 @@
 {
   "apiUrl": "https://clawhub.ai/api/v1/skills/tencentcloud-api-skill",
-  "contentSha256": "7beaca12f553123a17269a47f47fb5046df2e93639c83048fe7e35723aa1e9ef",
+  "contentSha256": "bd8811c0b1b7dd9a9895451de6f693c243912cf3aa3a6a2c00e051f61c51b29c",
   "downloadUrl": "https://clawhub.ai/api/v1/download?slug=tencentcloud-api-skill&tag=latest",
   "files": [
     {
@@ -30,8 +30,8 @@
     },
     {
       "path": "skill-card.md",
-      "sha256": "ce19362ee02ce74c4d1ab9996144b166ec749f02b59656c2ab3f41c09f2b0b8b",
-      "size": 2632
+      "sha256": "644fe4a5e90a1b6930f490a5d523ba0af133b8456b49251457cf7d2942a20dfc",
+      "size": 2552
     }
   ],
   "license": "MIT-0",
