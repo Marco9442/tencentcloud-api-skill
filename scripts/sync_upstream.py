@@ -11,6 +11,8 @@ from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -24,8 +26,10 @@ STATE_PATH = ROOT / ".clawhub" / "upstream.json"
 MIRROR_OWNED = {
     "README.md",
     "scripts/sync_upstream.py",
+    "scripts/test_sync_upstream.py",
     ".github/workflows/sync-upstream.yml",
     ".clawhub/upstream.json",
+    ".gitignore",
 }
 MIT_0 = """MIT No Attribution
 
@@ -46,13 +50,40 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 
+RETRY_ATTEMPTS = 5
+
+
+def _transient_status(code: int) -> bool:
+    return code == 429 or 500 <= code <= 599
+
+
 def fetch(url: str) -> bytes:
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Marco9442/tencentcloud-api-skill sync workflow"},
-    )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return response.read()
+    """GET url。5xx、429 和网络错误按 1、2、4、8、16 秒退避，最多再试 5 次。"""
+    for attempt in range(RETRY_ATTEMPTS + 1):
+        try:
+            request = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Marco9442/tencentcloud-api-skill sync workflow"},
+            )
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return response.read()
+        except urllib.error.HTTPError as error:
+            retry = _transient_status(error.code) and attempt < RETRY_ATTEMPTS
+            error.close()
+            if not retry:
+                raise
+            reason: BaseException = error
+        except (urllib.error.URLError, TimeoutError) as error:
+            if attempt == RETRY_ATTEMPTS:
+                raise
+            reason = error
+        delay = 2**attempt
+        print(
+            f"Retrying {url} in {delay}s after {reason} ({attempt + 1}/{RETRY_ATTEMPTS})",
+            flush=True,
+        )
+        time.sleep(delay)
+    raise RuntimeError(f"Retry loop exited without a result for {url}")
 
 
 def safe_members(archive: zipfile.ZipFile) -> list[zipfile.ZipInfo]:

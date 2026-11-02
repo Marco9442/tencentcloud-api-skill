@@ -15,11 +15,16 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Check out mirror
         uses: actions/checkout@v7.0.1
+
+      - name: Test upstream fetch retry
+        run: python3 -m unittest scripts/test_sync_upstream.py
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
 
       - name: Synchronize latest ClawHub package
         run: python3 scripts/sync_upstream.py
